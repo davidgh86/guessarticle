@@ -75,6 +75,7 @@ export default {
     if (this.isFinished(lastFinishedArticle)){
       this.finished = true
       localStorage.removeItem("guessedWords")
+      localStorage.removeItem("wordsRegistry")
     } else {
       //localStorage.removeItem("wordsRegistry")
     }
