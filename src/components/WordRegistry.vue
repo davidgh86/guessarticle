@@ -1,5 +1,8 @@
 <template>
-  <div class="grid-container">
+  <div class="grid-container" >
+    <div class="grid-item"><b>Numero</b></div>
+    <div class="grid-item"><b>Palabra</b></div>
+    <div class="grid-item"><b>Apariciones</b></div>
     <div v-for="item in wordRegistryList" class="grid-item" :key="item">
       {{ item }}
     </div>
@@ -20,7 +23,7 @@ export default {
       let result = []
       const reversedRegistry = Array.from(props.registry).reverse();
       // eslint-disable-next-line no-unused-vars
-      reversedRegistry.forEach(([key, value]) => {
+      reversedRegistry.forEach(([, value]) => {
         result.push(value.numberOfGuessedWords)
         result.push(value.word)
         result.push(value.frequency)
