@@ -1,6 +1,6 @@
 <template>
   <div>
-    {{ wordsRegistry }}
+    
     <div  v-if="!finished">
       <div v-for="w in title" :key="w" style="display:inline-flex;">
         <Word v-if="isGuessable(w)" :value="w" :current="submittedInput" style="display:inline-flex;" />
@@ -39,6 +39,7 @@
         <div v-else style="display:inline-flex;">{{ w }}</div>
       </div>
     </div>
+    <WordRegistry :registry="wordsRegistry" />
   </div>
   
 </template>
@@ -46,18 +47,21 @@
 <script>
 import Word from './components/Word.vue'
 import Input from './components/Input.vue'
+import WordRegistry from './components/WordRegistry.vue'
 //import {ref} from "vue"
 
 export default {
   name: 'App',
   components: {
     Word,
-    Input
+    Input,
+    WordRegistry
   },
   data() {
     return {
+      numberOfGuessedWords: 0,
       finished: false,
-      wordsRegistry: {},
+      wordsRegistry: new Map(),
       guessedWords: new Set([]),
       title: "a, ,b, ,c, ,d".split(","),
       propositions: new Set(["a", "ante", "bajo", "cabe", "con", "contra", "de", "desde", "durante", "en ", "entre", "hacia", "hasta", "mediante", "para", "por", "según", "sin", "so", "sobre", "tras", "versus", "vía"]),
@@ -68,13 +72,13 @@ export default {
   },
   mounted(){
     let lastFinishedArticle = !localStorage.getItem("lastArticle")?[]:JSON.parse(localStorage.getItem("lastArticle"));
-    if (this.isSameArray(lastFinishedArticle, this.title)){
+    if (this.isFinished(lastFinishedArticle)){
       this.finished = true
     } else {
       localStorage.removeItem("wordsRegistry")
       localStorage.removeItem("guessedWords")
     }
-    this.wordsRegistry = !localStorage.getItem("wordsRegistry")?{}:JSON.parse(localStorage.getItem("wordsRegistry"));
+    this.wordsRegistry = !localStorage.getItem("wordsRegistry")?new Map():new Map(Object.entries(JSON.parse(localStorage.getItem("wordsRegistry"))));
     this.guessedWords = !localStorage.getItem("guessedWords")?new Set([]):new Set(JSON.parse(localStorage.getItem("guessedWords")));
   },
   methods: {
@@ -95,35 +99,50 @@ export default {
       let elementsCount = this.countWords(word)
       let firstApperared = this.fistWordAppered(word)
       let key = this.getStandarizedWord(firstApperared)
-
-      let object = {
-        word: firstApperared,
-        frequency: elementsCount
-      }
-      if (!(key in this.wordsRegistry)) {
-        localStorage.setItem("wordsRegistry", JSON.stringify(this.wordsRegistry))
-        this.wordsRegistry[key] = object
+      
+      if (!(this.wordsRegistry.has(key))) {
+        this.numberOfGuessedWords = this.numberOfGuessedWords + 1;
+        let object = {
+          word: firstApperared,
+          frequency: elementsCount,
+          numberOfGuessedWords: this.numberOfGuessedWords
+        }
+        this.wordsRegistry.set(key, object)
+        localStorage.setItem("wordsRegistry", JSON.stringify(Object.fromEntries(this.wordsRegistry)))
       }
     },
     getStandarizedWord(word){
       return word.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
     },
     isGuessable(word){
-      return !this.propositions.has(word.toLowerCase()) && !this.separators.has(word) && !this.guessedWords.has(this.getStandarizedWord(word))
+      let standarizedPrepositions = new Set(Array.from(this.propositions).map(w => this.getStandarizedWord(w)))
+      return !standarizedPrepositions.has(this.getStandarizedWord(word)) && !this.separators.has(word) && !this.guessedWords.has(this.getStandarizedWord(word))
     },
-    isSameArray(s1, s2){
-      if (s1.length !== s2.length) {
+    isFinished(lastFinishedArticle){
+      // let standarizedLastFinishedArticle = lastFinishedArticle.map(w=>this.getStandarizedWord(w))
+      // let standarizedTitle = this.title.map(w=>this.getStandarizedWord(w))
+      // let standarizedLastFinishedArticleIndex = 0;
+      // for (let i=0; i<standarizedTitle.length; i++){
+      //   let matchPositions = standarizedTitle[i]===standarizedLastFinishedArticle[]
+      //   if (!this.propositions.has(w) && !this.separators.has(w) && !lastFinishedArticleSet.has(w)) {
+      //     return false;
+      //   }
+      // }
+      // return true;
+      // fo
+      if (lastFinishedArticle.length !== this.title.length) {
         return false;
       }
-      for(let i=0; i<s1.length; i++){
-        if(this.getStandarizedWord(s1[i])!==this.getStandarizedWord(s2[i])){
+      for(let i=0; i<lastFinishedArticle.length; i++){
+        if(this.getStandarizedWord(lastFinishedArticle[i])!==this.getStandarizedWord(this.title[i])){
           return false;
         }
       }
       return true;
     },
     guessedTitleWords(){
-      return this.title.filter(i=>(i.length!=0 && !this.separators.has(i))).every(i => this.guessedWords.has(this.getStandarizedWord(i)))
+      let standarizedPrepositions = new Set(Array.from(this.propositions).map(w => this.getStandarizedWord(w)))
+      return this.title.filter(i=>(i.length!=0 && !this.separators.has(i) && !standarizedPrepositions.has(i))).every(i => this.guessedWords.has(this.getStandarizedWord(i)))
     },
     countWords(word){
       let wordsInTitle = this.title.filter(w => this.getStandarizedWord(w)===this.getStandarizedWord(word)).length;
