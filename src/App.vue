@@ -17,7 +17,10 @@
   <br/>
   <br/>
   <br/>
-  <Input @submitedWord="submitWord"/>
+  <div class="footer">
+  <p><Input @submitedWord="submitWord" class="footer"/></p>
+  </div>
+  
 </template>
 
 <script>
@@ -78,5 +81,16 @@ export default {
   text-align: center;
   color: #2c3e50;
   margin-top: 60px;
+}
+.footer {
+   position: fixed;
+   left: 0;
+   bottom: 0;
+   padding: 2rem;
+   width: 100%;
+   height: 10%;
+   background-color: rgb(20, 38, 176);
+   color: white;
+   text-align: center;
 }
 </style>
